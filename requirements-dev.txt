@@ -1,0 +1,6 @@
+-r requirements.txt
+# Needed for backtest_v3.py and the tests
+numpy
+pandas
+scikit-learn
+pytest

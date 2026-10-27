@@ -1,0 +1,42 @@
+name: Daily predictions
+
+on:
+  schedule:
+    - cron: "0 5 * * *"        # 05:00 UTC = 06:00 in Nigeria. Edit to taste.
+  workflow_dispatch:            # lets you press "Run workflow" by hand
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: pip install -r requirements.txt
+
+      - name: Build the site data (refreshes yesterday's results, predicts today and tomorrow)
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: python build_site.py
+
+      - name: Score yesterday's predictions against the results
+        run: python score_day.py --date "$(TZ=Africa/Lagos date -d yesterday +%F)" || echo "Nothing to score yet"
+
+      - name: Commit the updated site and data
+        run: |
+          git config user.name "sports-buddy-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add docs data/historical/recent_results.csv data/today data/tracking
+          git diff --cached --quiet || (git commit -m "Daily update $(date -u +%F)" && git push)

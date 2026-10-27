@@ -1,0 +1,23 @@
+kickoff,country,league,home,away,fixture_id,xg_home,xg_away,xg_total,p_over_1_5,fair_odds_o15,p_over_2_5,fair_odds_o25,data_quality,data_quality_note,model_version,p_home,p_draw,p_away,p_1x,fair_odds_1x,p_x2,fair_odds_x2,pick,pick_probability
+12:30,England,Premier League,Aston Villa,Manchester City,,1.18,1.84,3.02,80.78,1.24,59.62,1.68,OK,,v4,19.6,22.4,58.0,41.96,2.38,80.42,1.24,Over 1.5 goals,80.78
+13:00,Spain,La Liga,Rayo Vallecano,Elche CF,,1.49,1.05,2.54,74.13,1.35,49.58,2.02,OK,,v4,47.4,28.2,24.4,75.57,1.32,52.63,1.9,Home win or draw,75.57
+14:00,Italy,Serie A,Cagliari Calcio,Bologna FC,,1.11,1.28,2.39,71.31,1.4,45.76,2.19,OK,,v4,33.5,28.2,38.3,61.7,1.62,66.47,1.5,Over 1.5 goals,71.31
+14:00,Italy,Serie A,Como 1907,Sassuolo Calcio,,1.84,0.95,2.79,79.24,1.26,56.32,1.78,OK,,v4,61.5,22.3,16.3,83.74,1.19,38.51,2.6,Home win or draw,83.74
+14:30,Germany,Bundesliga,RB Leipzig,SV 07 Elversberg,,2.2,1.33,3.53,87.89,1.14,69.77,1.43,LOW,One team has little recent top-flight history (e.g. newly promoted); the estimate leans toward the league average.,v4,56.5,22.6,20.9,79.1,1.26,43.48,2.3,Over 1.5 goals,87.89
+14:30,Germany,Bundesliga,FC Augsburg,Union Berlin,,1.68,1.22,2.9,81.31,1.23,59.69,1.68,OK,,v4,52.8,25.2,22.0,77.99,1.28,47.25,2.12,Over 1.5 goals,81.31
+14:30,Germany,Bundesliga,FSV Mainz,Werder Bremen,,1.83,1.22,3.04,82.88,1.21,61.6,1.62,OK,,v4,52.1,24.7,23.2,76.81,1.3,47.86,2.09,Over 1.5 goals,82.88
+14:30,Germany,Bundesliga,1. FC Cologne,Schalke 04,,1.63,1.23,2.85,78.06,1.28,53.35,1.87,OK,,v4,43.3,27.9,28.8,71.2,1.4,56.66,1.77,Over 1.5 goals,78.06
+14:30,Germany,Bundesliga,SC Paderborn 07,Hamburger SV,,1.64,1.16,2.8,78.11,1.28,54.39,1.84,LOW,One team has little recent top-flight history (e.g. newly promoted); the estimate leans toward the league average.,v4,47.5,27.0,25.4,74.59,1.34,52.45,1.91,Over 1.5 goals,78.11
+15:00,England,Premier League,Arsenal FC,Everton FC,,1.86,0.73,2.59,77.85,1.28,54.63,1.83,OK,,v4,66.6,20.7,12.7,87.32,1.15,33.39,3.0,Home win or draw,87.32
+15:00,England,Premier League,Coventry City,Fulham FC,,1.38,1.32,2.7,74.73,1.34,50.21,1.99,LOW,One team has little recent top-flight history (e.g. newly promoted); the estimate leans toward the league average.,v4,36.6,27.7,35.7,64.34,1.55,63.36,1.58,Over 1.5 goals,74.73
+15:15,Spain,La Liga,Racing Santander,Espanyol Barcelona,,1.66,1.4,3.05,77.41,1.29,53.2,1.88,LOW,One team has little recent top-flight history (e.g. newly promoted); the estimate leans toward the league average.,v4,36.3,28.0,35.8,64.24,1.56,63.71,1.57,Over 1.5 goals,77.41
+17:00,Italy,Serie A,SSC Napoli,AS Roma,,1.24,1.08,2.32,72.41,1.38,46.49,2.15,OK,,v4,35.9,29.4,34.7,65.31,1.53,64.11,1.56,Over 1.5 goals,72.41
+17:30,Germany,Bundesliga,Borussia Dortmund,Eintracht Frankfurt,,2.47,1.23,3.7,88.95,1.12,71.71,1.39,OK,,v4,69.0,18.2,12.8,87.2,1.15,31.03,3.22,Over 1.5 goals,88.95
+17:30,Spain,La Liga,Valencia CF,Villarreal CF,,1.31,1.51,2.83,76.1,1.31,52.98,1.89,OK,,v4,28.5,26.5,44.9,55.06,1.82,71.46,1.4,Over 1.5 goals,76.1
+17:30,England,Premier League,Chelsea FC,Tottenham Hotspur,,1.93,1.3,3.22,83.26,1.2,62.52,1.6,OK,,v4,53.9,23.0,23.1,76.93,1.3,46.06,2.17,Over 1.5 goals,83.26
+18:30,USA,MLS,CF Montreal,Nashville SC,,1.23,1.6,2.83,78.27,1.28,54.32,1.84,OK,,v4,19.0,24.1,56.9,43.11,2.32,80.98,1.23,Away win or draw,80.98
+19:45,France,Ligue 1,Racing Club De Lens,Paris FC,,1.77,1.11,2.88,80.27,1.25,58.11,1.72,OK,,v4,52.7,24.6,22.7,77.32,1.29,47.32,2.11,Over 1.5 goals,80.27
+19:45,Italy,Serie A,Lazio Rome,Parma Calcio,,1.61,0.75,2.36,73.73,1.36,48.43,2.06,OK,,v4,64.5,22.7,12.8,87.16,1.15,35.53,2.81,Home win or draw,87.16
+20:00,Spain,La Liga,Atletico Madrid,RC Deportivo de A Coruna,,1.97,0.95,2.92,80.36,1.24,58.59,1.71,LOW,One team has little recent top-flight history (e.g. newly promoted); the estimate leans toward the league average.,v4,63.5,21.9,14.6,85.4,1.17,36.54,2.74,Home win or draw,85.4
+20:30,USA,MLS,Columbus Crew,Toronto FC,,2.15,1.07,3.22,84.76,1.18,64.35,1.55,OK,,v4,60.5,21.6,17.8,82.18,1.22,39.46,2.53,Over 1.5 goals,84.76
+22:30,USA,MLS,New York Red Bulls,Inter Miami CF,,1.74,1.76,3.49,84.93,1.18,64.32,1.55,OK,,v4,26.6,24.8,48.6,51.36,1.95,73.44,1.36,Over 1.5 goals,84.93

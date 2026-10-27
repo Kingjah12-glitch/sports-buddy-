@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.py[cod]
+.env
+*.db
+.pytest_cache/
+
+# Large generated backtest outputs (re-create with the backtest scripts)
+data/historical/backtest_results.csv
+data/historical/backtest_v2_results.csv
+data/historical/backtest_v3_results.csv

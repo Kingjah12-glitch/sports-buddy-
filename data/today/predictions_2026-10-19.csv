@@ -1,0 +1,17 @@
+kickoff,country,league,home,away,fixture_id,xg_home,xg_away,xg_total,p_over_1_5,fair_odds_o15,p_over_2_5,fair_odds_o25,data_quality,data_quality_note,model_version
+00:00,Brazil,Serie A,Corinthians,Vitoria,1492414,1.58,0.89,2.48,72.14,1.39,47.12,2.12,OK,,v4
+17:00,Germany,Frauen Bundesliga,Bayern Munich W,Stuttgart W,1593150,3.08,1.21,4.29,92.48,1.08,78.25,1.28,OK,,v4
+17:30,Italy,Serie A,Monza,Cagliari,1550153,1.25,1.23,2.48,72.04,1.39,45.56,2.19,OK,,v4
+18:00,Sweden,Allsvenskan,Degerfors IF,Kalmar FF,1494299,1.32,1.17,2.49,70.74,1.41,43.53,2.3,OK,,v4
+18:00,Poland,Ekstraklasa,Wisla Plock,Radomiak Radom,1553198,1.51,1.16,2.67,74.82,1.34,50.33,1.99,OK,,v4
+18:00,Denmark,Superliga,Viborg,FC Midtjylland,1549039,1.43,1.71,3.13,80.79,1.24,59.3,1.69,OK,,v4
+18:00,Turkey,Süper Lig,Trabzonspor,Beşiktaş,1584438,1.63,1.3,2.92,80.28,1.25,58.31,1.72,OK,,v4
+19:00,England,Premier League 2 Division One,Birmingham City U21,Derby County U21,1621057,1.42,1.1,2.52,74.3,1.35,50.27,1.99,OK,,v4
+19:45,France,Ligue 2,Rodez,Montpellier,1552503,1.22,1.18,2.4,70.07,1.43,43.66,2.29,OK,,v4
+19:45,Ireland,Premier Division,Waterford,Galway United,1492779,1.38,1.22,2.6,74.02,1.35,48.87,2.05,OK,,v4
+19:45,Italy,Serie A,Parma,Torino,1550154,1.09,1.09,2.18,68.57,1.46,42.12,2.37,OK,,v4
+20:00,Spain,La Liga,Getafe,Rayo Vallecano,1570417,1.08,0.85,1.93,65.63,1.52,39.34,2.54,OK,,v4
+20:00,Ireland,Premier Division,Derry City,St Patrick's Athl.,1492776,1.18,1.1,2.28,71.36,1.4,45.72,2.19,OK,,v4
+20:15,Portugal,Primeira Liga,SC Braga,GIL Vicente,1575458,1.75,0.9,2.66,75.58,1.32,52.18,1.92,OK,,v4
+23:00,Argentina,Liga Profesional Argentina,Newells Old Boys,Central Cordoba de Santiago,1493192,1.15,0.9,2.05,62.28,1.61,35.47,2.82,OK,,v4
+23:00,Argentina,Liga Profesional Argentina,Sarmiento Junin,Barracas Central,1493195,1.09,0.88,1.97,63.49,1.57,36.61,2.73,OK,,v4

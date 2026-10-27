@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sports Buddy | Football Analytics</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="topbar">
+        <div class="brand">⚽ Sports Buddy</div>
+        <div class="api-status">
+            <span id="status-dot"></span>
+            <span id="api-status">Checking connection...</span>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="toolbar">
+            <div>
+                <h2>Match predictions</h2>
+                <p>Goal-market estimates for every covered match, one league at a time.</p>
+            </div>
+            <div class="date-control">
+                <input type="date" id="match-date">
+                <button id="load-matches">Load matches</button>
+            </div>
+        </section>
+
+        <p id="message" role="status">Loading matches...</p>
+        <section id="summary" class="summary-bar" hidden></section>
+        <section id="suggestions" class="suggestions" hidden>
+            <div class="sg-head">
+                <div>
+                    <h3>Suggested picks</h3>
+                    <p class="sg-sub">The most likely option from each match, across every competition on this day.</p>
+                </div>
+                <button id="sg-copy" type="button" class="sg-copy">Copy list</button>
+            </div>
+            <div class="sg-controls">
+                <label class="sg-field">Minimum probability
+                    <span class="sg-range"><input type="range" id="sg-min" min="60" max="95" step="1" value="80"><output id="sg-min-out">80%</output></span>
+                </label>
+                <div class="sg-field">Markets <div id="sg-markets" class="sg-markets"></div></div>
+                <label class="sg-field">Sort by
+                    <select id="sg-sort">
+                        <option value="prob">Probability</option>
+                        <option value="gap">Gap to my odds</option>
+                        <option value="time">Kickoff</option>
+                    </select>
+                </label>
+            </div>
+            <p class="sg-warning">Most likely is not the same as best value. Likelier outcomes pay lower odds, and in
+               backtests even the safest picks lost money on average after the bookmaker's margin. A pick only has
+               value if your bookmaker offers more than its fair odds.</p>
+            <p id="sg-count" class="sg-count"></p>
+            <ol id="sg-list" class="sg-list"></ol>
+        </section>
+        <nav id="league-tabs" class="league-tabs" aria-label="Leagues"></nav>
+        <section id="matches" class="matches-grid"></section>
+        <section id="extras" class="extras"></section>
+
+        <section class="disclaimer">
+            <strong>Remember</strong>
+            <p>Probabilities are calibrated estimates, not guarantees. In historical
+               backtests the bookmakers' own prices were at least as accurate as this
+               model, and betting on the model's "edge" lost money on average. Use the
+               fair odds as a reference, treat any gap to your bookmaker's price with
+               caution, and never stake more than you can afford to lose.</p>
+        </section>
+    </main>
+
+    <script src="config.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

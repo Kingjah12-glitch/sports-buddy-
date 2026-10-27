@@ -1,0 +1,16 @@
+# Render blueprint: hosts the Sports Buddy API for free so the website can call it live.
+services:
+  - type: web
+    name: sports-buddy-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.3
+      - key: API_FOOTBALL_KEY
+        sync: false            # you type it in the Render dashboard; it never goes in the repo
+      - key: ALLOWED_ORIGINS
+        value: https://kingjah12-glitch.github.io
