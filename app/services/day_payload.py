@@ -27,6 +27,9 @@ def match_json(r: dict) -> dict:
         "over_2_5": {"probability": r["p_over_2_5"], "fair_odds": r["fair_odds_o25"]},
         "data_quality": r["data_quality"], "data_quality_note": r.get("data_quality_note"),
         "outcomes": r["outcomes"], "options": r["options"], "pick": r["pick_detail"],
+        "status": r.get("status", "upcoming"), "status_short": r.get("status_short"),
+        "score": ({"home": r["home_goals"], "away": r["away_goals"]}
+                  if r.get("home_goals") is not None and r.get("away_goals") is not None else None),
     }
 
 

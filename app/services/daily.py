@@ -26,16 +26,39 @@ def get_tz(name):
         raise ValueError(f"Time zone '{name}' not found. Run: pip install tzdata")
 
 
+UPCOMING = {"NS", "TBD"}
+LIVE = {"1H", "HT", "2H", "ET", "BT", "P", "LIVE", "INT", "SUSP"}
+FINISHED = {"FT", "AET", "PEN"}
+
+
+def status_kind(short):
+    """'upcoming' | 'live' | 'finished' (None for postponed / cancelled / abandoned)."""
+    if short in UPCOMING:
+        return "upcoming"
+    if short in LIVE:
+        return "live"
+    if short in FINISHED:
+        return "finished"
+    return None
+
+
 def fixtures_from_api_items(items, tz):
-    """API-Football 'fixtures?date=' items -> simple dicts (not-started only)."""
+    """API-Football 'fixtures?date=' items -> simple dicts.
+
+    Matches that have already started or finished are KEPT (with status and score), so the
+    page still shows the whole day after kickoff. Postponed / cancelled games are dropped.
+    Predictions only use results up to yesterday, so they stay valid pre-match numbers."""
     out = []
     for it in items:
-        if it.get("fixture", {}).get("status", {}).get("short") not in ("NS", "TBD"):
+        short = it.get("fixture", {}).get("status", {}).get("short")
+        kind = status_kind(short)
+        if kind is None:
             continue
         try:
             kick = datetime.fromisoformat(it["fixture"]["date"].replace("Z", "+00:00"))
         except (KeyError, ValueError):
             continue
+        goals = it.get("goals") or {}
         out.append({
             "kickoff": kick.astimezone(tz),
             "fixture_id": it["fixture"].get("id"),
@@ -43,6 +66,8 @@ def fixtures_from_api_items(items, tz):
             "league": it.get("league", {}).get("name"),
             "home": it["teams"]["home"]["name"],
             "away": it["teams"]["away"]["name"],
+            "status": kind, "status_short": short,
+            "goals": (goals.get("home"), goals.get("away")),
         })
     return out
 
@@ -98,6 +123,8 @@ def predict_rows(fixtures, state, odds=None):
             "p_over_2_5": m25["estimated_probability"], "fair_odds_o25": m25["fair_odds"],
             "data_quality": a["data_quality"], "data_quality_note": a.get("data_quality_note"),
             "model_version": a["model_version"],
+            "status": fx.get("status") or "upcoming", "status_short": fx.get("status_short"),
+            "home_goals": (fx.get("goals") or (None, None))[0], "away_goals": (fx.get("goals") or (None, None))[1],
             "p_home": a["outcomes"]["home"], "p_draw": a["outcomes"]["draw"], "p_away": a["outcomes"]["away"],
             "p_1x": a["markets"]["home_or_draw"]["estimated_probability"],
             "fair_odds_1x": a["markets"]["home_or_draw"]["fair_odds"],

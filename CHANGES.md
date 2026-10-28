@@ -1,3 +1,19 @@
+# Sports Buddy - update 10 (matches no longer vanish after kickoff)
+
+- **Bug fixed:** the live view kept only matches that had not started, so opening the site once the day's games had
+  kicked off (or finished) showed "no matches". Now every match of the day stays: upcoming, live (with the live score)
+  and finished (final score). Postponed / cancelled games are hidden.
+- Predictions for started matches are still true pre-match numbers (ratings only use results up to yesterday).
+- Finished matches show a green tick / red cross on every option (Over 1.5, Over 2.5, Under 2.5, Home or draw,
+  Away or draw), so you can see straight away how the model did.
+- Suggested picks: by default only matches that have not started; tick "Include matches already played" to see
+  how the picks did. If everything has finished the panel says so instead of looking broken.
+- Previous / next day buttons next to the date; clearer message on days with no covered competition (cup / midweek gap).
+- Bug fixed: clicking through days quickly could show an older day's data (a slow earlier request overwrote a newer one).
+- Tests: 35.
+
+---
+
 # Sports Buddy - update 9 (live API hosting)
 
 - The page calls a hosted API for the day's fixtures + predictions and builds the Suggested picks list from it;

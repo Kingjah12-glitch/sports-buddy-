@@ -29,6 +29,7 @@ const sgMarkets = document.getElementById("sg-markets");
 const sgSort = document.getElementById("sg-sort");
 const sgList = document.getElementById("sg-list");
 const sgCount = document.getElementById("sg-count");
+const sgPlayed = document.getElementById("sg-played");
 const message = document.getElementById("message");
 const statusText = document.getElementById("api-status");
 const statusDot = document.getElementById("status-dot");
@@ -51,6 +52,37 @@ function browserTimeZone() {
     } catch {
         return "Africa/Lagos";
     }
+}
+
+// Did this option come true? Only known once the match has finished.
+function optionResult(match, key) {
+    if (match.status !== "finished" || !match.score) return null;
+    const h = match.score.home, a = match.score.away, total = h + a;
+    switch (key) {
+        case "over_1_5_goals": return total >= 2;
+        case "over_2_5_goals": return total >= 3;
+        case "under_2_5_goals": return total <= 2;
+        case "home_or_draw": return h >= a;
+        case "away_or_draw": return a >= h;
+        default: return null;
+    }
+}
+
+function resultMark(match, key) {
+    const result = optionResult(match, key);
+    if (result === null) return null;
+    return el("span", result ? "res-hit" : "res-miss", result ? "✓" : "✗");
+}
+
+function statusChip(match) {
+    if (match.status === "live") {
+        const score = match.score ? ` ${match.score.home}–${match.score.away}` : "";
+        return el("span", "chip chip-live", `LIVE${score}`);
+    }
+    if (match.status === "finished" && match.score) {
+        return el("span", "chip chip-ft", `FT ${match.score.home}–${match.score.away}`);
+    }
+    return null;
 }
 
 function formatKickoff(match) {
@@ -134,7 +166,10 @@ function optionRow(match, option, saved, isPick, onChange) {
     const head = el("div", "option-head");
     const name = el("span", "option-label", option.label);
     if (isPick) name.appendChild(el("span", "pick-tag", "system pick"));
-    head.append(name, el("span", "option-value", `${option.probability.toFixed(1)}%`));
+    const valueBox = el("span", "option-value", `${option.probability.toFixed(1)}%`);
+    const mark = resultMark(match, option.key);
+    if (mark) valueBox.appendChild(mark);
+    head.append(name, valueBox);
 
     const track = el("div", "bar-track");
     const fill = el("div", "bar-fill");
@@ -174,6 +209,8 @@ function matchCard(match) {
 
     const top = el("div", "mc-top");
     top.appendChild(el("span", "kick", formatKickoff(match)));
+    const chip = statusChip(match);
+    if (chip) top.appendChild(chip);
     const quality = match.data_quality || "OK";
     if (quality === "LOW") {
         const badge = el("span", "badge-low", "limited history");
@@ -274,8 +311,12 @@ function renderSummary(data) {
     summaryBar.replaceChildren();
     summaryBar.hidden = false;
     const live = data.source.startsWith("api-football");
+    const flat = data.leagues.flatMap((l) => l.matches);
+    const finished = flat.filter((m) => m.status === "finished").length;
+    const liveNow = flat.filter((m) => m.status === "live").length;
     summaryBar.append(
         el("span", "pill", `${s.predicted} matches`),
+        ...(finished || liveNow ? [el("span", "pill", `${finished} played${liveNow ? `, ${liveNow} live` : ""}`)] : []),
         el("span", "pill", `${s.leagues} league${s.leagues === 1 ? "" : "s"}`),
         el("span", "pill", `model ${data.model_version || "-"}`),
         el("span", "pill", `history through ${data.data_through}`),
@@ -337,6 +378,7 @@ function collectSuggestions() {
     const items = [];
     for (const league of leagues) {
         for (const match of league.matches) {
+            if (!sgPlayed.checked && match.status && match.status !== "upcoming") continue;
             let best = null;
             for (const option of match.options || []) {
                 if (!enabledMarkets.has(option.key)) continue;
@@ -370,6 +412,8 @@ function suggestionRow(item, rank) {
     main.appendChild(el("div", "sg-match", `${match.home} v ${match.away}`));
     const meta = el("div", "sg-meta");
     meta.append(el("span", null, formatKickoff(match)), el("span", "sg-league", league.league));
+    const sgChip = statusChip(match);
+    if (sgChip) meta.appendChild(sgChip);
     const quality = match.data_quality || "OK";
     if (quality === "LOW") meta.appendChild(el("span", "badge-low", "limited history"));
     if (quality.startsWith("CROSS")) meta.appendChild(el("span", "badge-cross", "cross-league"));
@@ -378,7 +422,12 @@ function suggestionRow(item, rank) {
 
     const pick = el("div", "sg-pick");
     pick.append(el("div", "sg-pick-label", option.label),
-                el("div", "sg-pick-prob", `${option.probability.toFixed(1)}%`),
+                (() => {
+                    const prob = el("div", "sg-pick-prob", `${option.probability.toFixed(1)}%`);
+                    const m = resultMark(match, option.key);
+                    if (m) prob.appendChild(m);
+                    return prob;
+                })(),
                 el("div", "market-fair", `fair odds ${option.fair_odds.toFixed(2)}`));
     li.appendChild(pick);
 
@@ -420,7 +469,13 @@ function renderSuggestions() {
     currentSuggestions = sortSuggestions(collectSuggestions());
     sgList.replaceChildren();
     const comps = new Set(currentSuggestions.map((i) => i.league.key));
-    const total = leagues.reduce((n, l) => n + l.matches.length, 0);
+    const all = leagues.flatMap((l) => l.matches);
+    const played = all.filter((m) => m.status && m.status !== "upcoming").length;
+    const total = sgPlayed.checked ? all.length : all.length - played;
+    if (!currentSuggestions.length && !sgPlayed.checked && played === all.length) {
+        sgCount.textContent = `All ${all.length} match${all.length === 1 ? "" : "es"} today have started or finished. Tick "Include matches already played" to see how the picks did.`;
+        return;
+    }
     sgCount.textContent = currentSuggestions.length
         ? `${currentSuggestions.length} suggested pick${currentSuggestions.length === 1 ? "" : "s"} from ${total} matches in ${comps.size} competition${comps.size === 1 ? "" : "s"}`
         : `No option reaches ${sgMin.value}% (of ${total} matches). Lower the minimum or enable more markets.`;
@@ -442,6 +497,7 @@ async function copySuggestions() {
 
 sgMin.addEventListener("input", renderSuggestions);
 sgSort.addEventListener("change", renderSuggestions);
+sgPlayed.addEventListener("change", renderSuggestions);
 document.getElementById("sg-copy").addEventListener("click", copySuggestions);
 buildMarketToggles();
 
@@ -474,7 +530,10 @@ async function fetchDay(date) {
     return response.json();
 }
 
+let loadToken = 0;          // lets a newer request win over a slower older one
+
 async function loadMatches() {
+    const token = ++loadToken;
     matchesContainer.replaceChildren();
     tabsContainer.replaceChildren();
     extras.replaceChildren();
@@ -489,10 +548,11 @@ async function loadMatches() {
     try {
         const data = await fetchDay(currentDate);
         clearTimeout(slowTimer);
+        if (token !== loadToken) return;      // a newer request has taken over
 
         leagues = data.leagues || [];
         if (leagues.length === 0) {
-            message.textContent = "No covered matches were found for this date.";
+            message.textContent = "No matches in the 40 covered competitions on this date (a cup or midweek gap?). Try the next day with the › button.";
             renderExtras(data);
             return;
         }
@@ -506,11 +566,22 @@ async function loadMatches() {
         renderExtras(data);
     } catch (error) {
         clearTimeout(slowTimer);
+        if (token !== loadToken) return;
         message.textContent = `Could not load predictions: ${error.message}.` +
             (API_BASE ? " Check that the FastAPI server is running." : "");
     }
 }
 
+function shiftDay(delta) {
+    const base = dateInput.value ? new Date(`${dateInput.value}T12:00:00`) : new Date();
+    base.setDate(base.getDate() + delta);
+    const y = base.getFullYear(), m = String(base.getMonth() + 1).padStart(2, "0"), d = String(base.getDate()).padStart(2, "0");
+    dateInput.value = `${y}-${m}-${d}`;
+    loadMatches();
+}
+
+document.getElementById("prev-day").addEventListener("click", () => shiftDay(-1));
+document.getElementById("next-day").addEventListener("click", () => shiftDay(1));
 document.getElementById("load-matches").addEventListener("click", loadMatches);
 dateInput.value = localDateString();
 checkAPI();

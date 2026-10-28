@@ -151,15 +151,17 @@ def test_today_parses_api_items_and_predicts():
     import today
     from app.services.ratings_store import get_state
     items = [_api_item("NS", "AFC Bournemouth", "Sunderland AFC"),
-             _api_item("FT", "Arsenal FC", "Chelsea FC", 1, 0),            # finished -> not a fixture
+             _api_item("FT", "Arsenal FC", "Chelsea FC", 1, 0),            # finished -> kept, with its score
              _api_item("NS", "Egypt A", "Egypt B", league="Premier League", country="Egypt")]
     fixtures = today.fixtures_from_api_items(items, ZoneInfo("Africa/Lagos"))
-    assert len(fixtures) == 2 and fixtures[0]["kickoff"].strftime("%H:%M") == "14:00"   # UTC+1
+    assert len(fixtures) == 3 and fixtures[0]["kickoff"].strftime("%H:%M") == "14:00"   # UTC+1
+    assert [f["status"] for f in fixtures] == ["upcoming", "finished", "upcoming"]
+    assert fixtures[1]["goals"] == (1, 0)
     state = get_state()
     covered = [f for f in fixtures if state.covered_groups(f["country"], f["league"])]
-    assert [f["home"] for f in covered] == ["AFC Bournemouth"]       # Egypt not mistaken for England
+    assert [f["home"] for f in covered] == ["AFC Bournemouth", "Arsenal FC"]       # Egypt not mistaken for England
     rows, unmatched = today.predict_rows(covered, state)
-    assert len(rows) == 1 and not unmatched
+    assert len(rows) == 2 and not unmatched
     assert 0 < rows[0]["p_over_2_5"] < rows[0]["p_over_1_5"] < 100
 
 
@@ -512,3 +514,26 @@ def test_build_site_never_overwrites_an_edited_config(monkeypatch, tmp_path):
     build_site.sync_site()
     assert "my-api.onrender.com" in (docs / "config.js").read_text()
     assert (docs / "index.html").exists()
+
+
+def test_started_and_finished_matches_stay_on_the_page(monkeypatch, tmp_path):
+    """Opening the site after kickoff must still show the day's matches (with score)."""
+    import app.routers.predictions as preds
+
+    async def live(endpoint, params=None):
+        return {"response": [
+            _api_item("FT", "Real Madrid", "Sevilla FC", 4, 1, "La Liga", "Spain"),
+            _api_item("2H", "Valencia CF", "Villarreal CF", 1, 0, "La Liga", "Spain"),
+            _api_item("NS", "Rayo Vallecano", "Elche CF", None, None, "La Liga", "Spain"),
+            _api_item("PST", "Atletico Madrid", "Getafe CF", None, None, "La Liga", "Spain")]}
+
+    preds._day_cache.clear()
+    monkeypatch.setattr(preds, "fetch_football_data", live)
+    monkeypatch.setattr(preds, "TODAY_DIR", tmp_path)
+    body = client.get("/api/v1/predictions/day?date=2026-10-18").json()
+    matches = body["leagues"][0]["matches"]
+    assert {m["home"]: m["status"] for m in matches} == {"Real Madrid": "finished", "Valencia CF": "live", "Rayo Vallecano": "upcoming"}
+    done = next(m for m in matches if m["status"] == "finished")
+    assert done["score"] == {"home": 4, "away": 1} and done["options"]
+    assert next(m for m in matches if m["status"] == "upcoming")["score"] is None
+    preds._day_cache.clear()
