@@ -44,6 +44,7 @@ async def lifespan(app: FastAPI):
         try:
             await run_in_threadpool(get_state)
         except Exception as error:      # missing CSVs etc.: endpoints report it themselves
+            app.state.warmup_error = str(error)
             log.warning("Ratings warm-up failed: %s", error)
     tasks = [asyncio.create_task(warm()), asyncio.create_task(refresh_loop())]
     yield
@@ -108,3 +109,28 @@ def api_info():
             "Live scores",
         ]
     }
+
+
+@app.get("/status", tags=["System"])
+def status():
+    """Plain-language health report: is the history, the model and the API key in place?"""
+    from app.config import API_FOOTBALL_KEY
+    from app.services import ratings_store
+    state = ratings_store._state
+    report = {
+        "api_football_key_configured": bool(API_FOOTBALL_KEY),
+        "history_and_ratings_ready": state is not None,
+        "warmup_error": getattr(app.state, "warmup_error", None),
+    }
+    if state is not None:
+        report.update({
+            "data_through": str(state.last_date),
+            "competitions": len(state.teams_by_group),
+            "model_v4_loaded": state.model is not None,
+            "outcome_model_loaded": state.outcome_model is not None,
+            "calibration_loaded": bool(state.calibrators),
+        })
+    else:
+        report["note"] = ("Still starting up (building ratings takes ~10 seconds)"
+                          if not report["warmup_error"] else "Start-up failed: see warmup_error")
+    return report

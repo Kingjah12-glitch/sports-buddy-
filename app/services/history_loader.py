@@ -8,6 +8,7 @@ Handles both layouts:
 Also tolerates Latin-1 encoded files (the old code skipped those).
 """
 import csv
+import gzip
 import io
 import re
 from datetime import datetime
@@ -19,6 +20,8 @@ from app.services.names import normalize_name, resolve_key
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 RAW_DIR = PROJECT_ROOT / "data" / "historical" / "raw"
 RECENT_FILE = PROJECT_ROOT / "data" / "historical" / "recent_results.csv"
+RECENT_SEED = PROJECT_ROOT / "data" / "historical" / "recent_results_seed.csv"   # shipped with the project
+HISTORY_ARCHIVE = PROJECT_ROOT / "data" / "historical" / "matches.csv.gz"         # all raw CSVs in one file
 
 _DATE_FORMATS = ("%d/%m/%Y", "%d/%m/%y", "%Y-%m-%d", "%d-%m-%Y", "%Y/%m/%d")
 _SEASON_SUFFIX = re.compile(r"^(?P<group>.+)_(?P<season>\d{4})$")
@@ -89,8 +92,42 @@ def _clean(row):
             for k, v in row.items()}
 
 
+def _archive_matches(path) -> list[dict]:
+    """Matches from the single-file archive written by build_history.py."""
+    matches = []
+    with gzip.open(path, "rt", encoding="utf-8", newline="") as fh:
+        for row in csv.DictReader(fh):
+            def num(key):
+                value = row.get(key)
+                return float(value) if value not in (None, "") else None
+            d = parse_date(row["date"])
+            hk, ak = normalize_name(row["home"]), normalize_name(row["away"])
+            matches.append({
+                "date": d, "day": d.toordinal(), "group": row["group"], "home": row["home"], "away": row["away"],
+                "hk": hk, "ak": ak, "hg": int(row["hg"]), "ag": int(row["ag"]),
+                "o_avg": num("o_avg"), "u_avg": num("u_avg"), "o_max": num("o_max"), "u_max": num("u_max"),
+                "x12": (num("x_h"), num("x_d"), num("x_a")),
+            })
+    return matches
+
+
+def write_archive(matches, path=HISTORY_ARCHIVE):
+    """Write matches (without the recent-results overlay) as one compressed CSV."""
+    fields = ["date", "group", "home", "away", "hg", "ag", "o_avg", "u_avg", "o_max", "u_max", "x_h", "x_d", "x_a"]
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    with gzip.open(path, "wt", encoding="utf-8", newline="") as fh:
+        w = csv.writer(fh)
+        w.writerow(fields)
+        for m in matches:
+            x = m.get("x12") or (None, None, None)
+            vals = [m["date"].isoformat(), m["group"], m["home"], m["away"], m["hg"], m["ag"],
+                    m["o_avg"], m["u_avg"], m["o_max"], m["u_max"], x[0], x[1], x[2]]
+            w.writerow(["" if v is None else v for v in vals])
+    return len(matches)
+
+
 @lru_cache(maxsize=2)
-def load_all_matches(raw_dir: str | None = None) -> list[dict]:
+def load_all_matches(raw_dir: str | None = None, include_overlay: bool = True) -> list[dict]:
     """Return completed matches sorted by date.
 
     Each item: date, day (ordinal), group (competition), home, away, hk, ak
@@ -98,12 +135,19 @@ def load_all_matches(raw_dir: str | None = None) -> list[dict]:
     (o_avg/u_avg/o_max/u_max).
     """
     folder = Path(raw_dir) if raw_dir else RAW_DIR
-    if not folder.exists():
-        raise FileNotFoundError(f"Historical CSV folder not found: {folder}")
-
-    files = sorted(folder.glob("*.csv"))
+    files = sorted(folder.glob("*.csv")) if folder.exists() else []
     if not files:
-        raise FileNotFoundError(f"No CSV files found in {folder}")
+        if not raw_dir and HISTORY_ARCHIVE.exists():          # e.g. on the hosted server
+            matches = _archive_matches(HISTORY_ARCHIVE)
+            seen = {(m["group"], m["date"], m["hk"], m["ak"]) for m in matches}
+            if include_overlay:
+                matches.extend(_overlay_matches(matches, seen))
+            matches.sort(key=lambda x: x["day"])
+            return matches
+        raise FileNotFoundError(
+            f"No match history found. Expected CSV files in {folder} or the single file "
+            f"{HISTORY_ARCHIVE}. Upload data/historical/matches.csv.gz to the repository "
+            "(python build_history.py creates it).")
 
     matches, seen = [], set()
 
@@ -156,7 +200,8 @@ def load_all_matches(raw_dir: str | None = None) -> list[dict]:
                 "x12": _first_triplet(row, _ODDS_1X2),
             })
 
-    matches.extend(_overlay_matches(matches, seen))
+    if include_overlay:
+        matches.extend(_overlay_matches(matches, seen))
     matches.sort(key=lambda x: x["day"])
     return matches
 
@@ -169,14 +214,16 @@ def _overlay_matches(matches, seen) -> list[dict]:
     resolved onto the CSV spelling of that competition, and anything already in
     the CSVs is skipped, so the file can safely be re-generated.
     """
-    if not RECENT_FILE.exists():
+    sources = [p for p in (RECENT_SEED, RECENT_FILE) if p.exists()]
+    if not sources:
         return []
     teams = {}
     for m in matches:
         teams.setdefault(m["group"], set()).update((m["hk"], m["ak"]))
 
     added = []
-    for raw_row in read_csv_rows(RECENT_FILE):
+    rows = [r for path in sources for r in read_csv_rows(path)]
+    for raw_row in rows:
         row = _clean(raw_row)
         try:
             hg, ag = int(row["HG"]), int(row["AG"])
