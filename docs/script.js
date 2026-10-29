@@ -3,6 +3,7 @@ const API_BASE = CONFIG.apiBase;           // "" = static website (no server)
 const DATA_BASE = CONFIG.dataBase || "data";
 
 class ApiError extends Error {}
+class ServerDown extends Error {}      // the hosted server did not answer at all
 
 const API_TIMEOUT_MS = 70000;     // free hosting can need ~1 minute to wake up
 const HEALTH_TIMEOUT_MS = 8000;
@@ -502,6 +503,7 @@ document.getElementById("sg-copy").addEventListener("click", copySuggestions);
 buildMarketToggles();
 
 async function fetchDay(date) {
+    let serverProblem = null;
     if (API_BASE) {
         try {
             const url = new URL(`${API_BASE}/api/v1/predictions/day`);
@@ -518,11 +520,20 @@ async function fetchDay(date) {
             throw new ApiError(detail || `Request failed (${response.status})`);
         } catch (error) {
             if (error instanceof ApiError) throw error;      // server answered with an error: show it
-            /* server unreachable: use the saved static data below */
+            serverProblem = error.name === "AbortError"
+                ? "did not answer within 70 seconds (it may be starting up or stopped)"
+                : "could not be reached (it may be starting up or stopped, or the address in config.js is wrong)";
+            statusText.textContent = "Server not answering";
+            statusDot.style.background = "#ef4444";
+            /* use the saved static data below if there is any */
         }
     }
     const response = await fetch(`${DATA_BASE}/${date}.json`);
     if (!response.ok) {
+        if (serverProblem) {
+            throw new ServerDown(`The prediction server ${serverProblem}, and there is no saved data for this date. ` +
+                                 `Open ${API_BASE}/status in a new tab to check it`);
+        }
         throw new Error(response.status === 404
             ? "No predictions have been published for this date yet"
             : `Request failed (${response.status})`);
@@ -568,7 +579,7 @@ async function loadMatches() {
         clearTimeout(slowTimer);
         if (token !== loadToken) return;
         message.textContent = `Could not load predictions: ${error.message}.` +
-            (API_BASE ? " Check that the FastAPI server is running." : "");
+            (API_BASE && !(error instanceof ServerDown) ? " Check that the FastAPI server is running." : "");
     }
 }
 
