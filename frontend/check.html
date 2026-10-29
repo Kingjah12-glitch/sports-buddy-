@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sports Buddy | Connection check</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #0b1120; color: #e6edf7; max-width: 760px; margin: 30px auto; padding: 0 16px; line-height: 1.5; }
+  h1 { font-size: 22px; } .step { background: #131e31; border: 1px solid #2a3850; border-radius: 12px; padding: 12px 16px; margin: 10px 0; }
+  .ok { color: #4ade80; } .bad { color: #f87171; } .warn { color: #fbbf24; } code { background: #0b1120; padding: 2px 6px; border-radius: 6px; word-break: break-all; }
+  #verdict { background: #101a2e; border: 2px solid #1d4ed8; border-radius: 12px; padding: 14px 18px; margin-top: 18px; font-size: 16px; }
+</style>
+</head>
+<body>
+<h1>Sports Buddy: connection check</h1>
+<p>This page tests, step by step, whether your site can reach your prediction server.</p>
+<div id="steps"></div>
+<div id="verdict">Running checks...</div>
+<script src="config.js"></script>
+<script>
+const steps = document.getElementById("steps");
+const verdict = document.getElementById("verdict");
+function add(cls, title, detail) {
+  const d = document.createElement("div"); d.className = "step";
+  const h = document.createElement("strong"); h.className = cls; h.textContent = title;
+  d.appendChild(h);
+  if (detail) { const p = document.createElement("div"); p.textContent = detail; d.appendChild(p); }
+  steps.appendChild(d);
+}
+function finish(text) { verdict.textContent = text; }
+async function timed(url, opts, ms) {
+  const c = new AbortController(); const t = setTimeout(() => c.abort(), ms); const t0 = performance.now();
+  try { const r = await fetch(url, { ...opts, signal: c.signal }); return { r, secs: (performance.now() - t0) / 1000 }; }
+  finally { clearTimeout(t); }
+}
+(async () => {
+  const cfg = window.SB_CONFIG;
+  // 1. config
+  if (!cfg) { add("bad", "1. config.js was not loaded", "The file docs/config.js is missing from your repository (or not published yet)."); return finish("Fix: add docs/config.js to your repository with your server address in it (see the README), commit, wait a minute, reload this page."); }
+  const base = (cfg.apiBase || "");
+  add(base ? "ok" : "bad", "1. Server address in config.js", base ? base : "apiBase is empty, so the site never calls a server.");
+  if (!base) return finish("Fix: edit docs/config.js so it reads: window.SB_CONFIG = { apiBase: \"https://YOUR-SERVICE.onrender.com\", dataBase: \"data\" };");
+  if (location.protocol === "https:" && base.startsWith("http://")) { add("bad", "2. Address uses http://", "A secure (https) site is not allowed to call an http:// address. Browsers block it silently."); return finish("Fix: change apiBase in docs/config.js to start with https://"); }
+  if (base.endsWith("/")) add("warn", "Address ends with /", "Remove the final slash from apiBase.");
+  // 2. reach the server at all (no-cors probe works even when CORS is wrong)
+  add("ok", "2. Waking the server", "Free servers sleep when idle. This can take up to a minute...");
+  let reachable = false, probeSecs = 0;
+  try { const { secs } = await timed(base + "/health", { mode: "no-cors" }, 75000); reachable = true; probeSecs = secs; } catch (e) { reachable = false; }
+  if (!reachable) { add("bad", "3. Server not reachable", "No answer from " + base + " (wrong address, server stopped, or no internet)."); return finish("Fix: open " + base + "/health in a new tab. If it does not show {\"status\":\"healthy\"}, the address in docs/config.js is wrong or the Render service is not running."); }
+  add("ok", "3. Server is reachable", "Answered in " + probeSecs.toFixed(1) + " s.");
+  // 3. CORS
+  let health = null;
+  try { const { r } = await timed(base + "/health", {}, 20000); health = await r.json(); } catch (e) { health = null; }
+  if (!health) { add("bad", "4. Blocked by CORS", "The server answers, but the browser refuses to give this site the answer. The server does not list this site's address as allowed."); return finish("Fix: in Render > your service > Environment, set ALLOWED_ORIGINS to exactly: " + location.origin + "   (then wait for the redeploy). Or set it to * to allow any site."); }
+  add("ok", "4. Browser is allowed to talk to the server (CORS)", "Server says: " + JSON.stringify(health));
+  // 4. status
+  try {
+    const { r } = await timed(base + "/status", {}, 20000); const s = await r.json();
+    const good = s.history_and_ratings_ready && s.model_v4_loaded && s.api_football_key_configured;
+    add(good ? "ok" : "warn", "5. Server status", JSON.stringify(s));
+  } catch (e) { add("warn", "5. Status unavailable", String(e)); }
+  // 5. a real day request
+  const today = new Date(); const ymd = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0") + "-" + String(today.getDate()).padStart(2, "0");
+  const tz = (Intl.DateTimeFormat().resolvedOptions().timeZone) || "Africa/Lagos";
+  try {
+    const { r, secs } = await timed(base + "/api/v1/predictions/day?date=" + ymd + "&tz=" + encodeURIComponent(tz), {}, 90000);
+    const body = await r.json();
+    if (r.ok) {
+      const s = body.summary || {};
+      add("ok", "6. Today's predictions (" + ymd + ")", s.predicted + " matches in " + s.leagues + " competitions; source: " + body.source + "; took " + secs.toFixed(1) + " s.");
+      return finish(s.predicted > 0 ? "All good: the server and the site work. If the main page still fails, press Ctrl+F5 (cached old files) and make sure docs/script.js is the newest version."
+                                    : "Connection is fine, but no covered matches today (a cup or midweek gap). Try another date on the main page.");
+    }
+    add("bad", "6. The server answered with an error (HTTP " + r.status + ")", typeof body.detail === "string" ? body.detail : JSON.stringify(body));
+    return finish("The connection works; the server could not build predictions for " + ymd + ". The message above says why (for example your API-Football key or plan).");
+  } catch (e) { add("bad", "6. Today's request failed", String(e)); return finish("The server is reachable but the prediction request failed or timed out. Reload and try again; if it repeats, copy the lines above to me."); }
+})();
+</script>
+</body>
+</html>
